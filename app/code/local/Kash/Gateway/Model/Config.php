@@ -20,15 +20,15 @@ class Kash_Gateway_Model_Config
     const METHOD_GATEWAY_KASH = 'kash_gateway';
 
     /**
-     * URL for get request
+     * URL for get request - BB Checkout
      * @var string
      */
-    const REQUEST_GATEWAY_KASH = 'kash_gateway/offsite/getRequest';
+    const REQUEST_GATEWAY_KASH = 'gateway/bb/getRequest';
 
     /**
-     *  Transaction type
+     *  Discount code
      */
-    const TRANSACTION_TYPE = 'x_transaction_type';
+    const GATEWAY_KASH_DISCOUNT_CODE ='discount_gatewaykash';
 
     /**
      * Current payment method code
@@ -128,7 +128,26 @@ class Kash_Gateway_Model_Config
         if (!$this->_methodCode) {
             return null;
         }
-        return "payment/{$this->_methodCode}/{$fieldName}";
+        switch ($fieldName) {
+            case 'merchant_country':
+                return "paypal/general/{$fieldName}";
+            default:
+                return "payment/{$this->_methodCode}/{$fieldName}";
+        }
+    }
+
+    /**
+     * Return merchant country code, use default country if it not specified in General settings
+     *  +/
+     * @return string
+     */
+    public function getMerchantCountry()
+    {
+        $countryCode = Mage::getStoreConfig($this->_mapMethodFieldset('merchant_country'), $this->_storeId);
+        if (!$countryCode) {
+            $countryCode = Mage::helper('core')->getDefaultCountry($this->_storeId);
+        }
+        return $countryCode;
     }
 
     /**
@@ -139,6 +158,19 @@ class Kash_Gateway_Model_Config
     public function isOrderReviewStepDisabled()
     {
         return Mage::getStoreConfigFlag(self::XML_PATH_GATEWAY_KASH_SKIP_ORDER_REVIEW_STEP_FLAG);
+    }
+
+    /**
+     * Get Payment image URL
+     * Supposed to be used on payment methods selection
+     * $staticSize is applicable for static images only
+     *
+     * @param string $localeCode
+     * @return String
+     */
+    public function getPaymentImageUrl($localeCode)
+    {
+        return 'https://offsite-gateway-sim.herokuapp.com/shopify.png';
     }
 }
 

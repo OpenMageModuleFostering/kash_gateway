@@ -40,8 +40,7 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         'Amount' => 'x_amount',
         'Result' => 'x_result',
         'Gateway Reference' => 'x_gateway_reference',
-        'Test mode' => 'x_test',
-        Kash_Gateway_Model_Config::TRANSACTION_TYPE => 'x_transaction_type'
+        'Test mode' => 'x_test'
     );
 
     /**
@@ -116,6 +115,18 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         'x_customer_shipping_phone' => 'telephone',
     );
 
+    protected $logFile = null;
+
+
+    public function __construct() {
+        $logDir = Mage::getBaseDir("log");
+        if (!is_dir($logDir)) {
+            mkdir($logDir);
+            chmod($logDir, 0750);
+        }
+        $this->logFile = $logDir . DIRECTORY_SEPARATOR . 'kash.log';
+
+    }
     /**
      * Return request for API
      *
@@ -129,15 +140,14 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         $request = $this->_importAddresses($request);
 
         $request['x_test'] = ($this->getXTest() === '1') ? 'true' : 'false';
-        $request['x_version'] = '0.2.12';
+        $request['x_version'] = '22';
         $request['x_plugin'] = 'magento';
 
         $date = Zend_Date::now();
         $request['x_timestamp'] = $date->getIso();
         $request['x_signature'] = $this->getSignature($request, $this->getHmacKey());
 
-        $logger = Mage::helper('kash_gateway')->logger();
-        $logger->log('x_reference '.$request['x_reference'].': callSetBBCheckout()');
+        $this->log('x_reference '.$request['x_reference'].': callSetBBCheckout()');
         return $request;
     }
 
@@ -153,7 +163,7 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         ksort($request);
         $signature = '';
         foreach ($request as $key => $val) {
-            if ($key === 'x_signature' || substr($key, 0, 2) !== "x_") {
+            if ($key === 'x_signature') {
                 continue;
             }
             $signature .= $key . $val;
@@ -209,6 +219,18 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         return $value;
     }
 
+    protected function getXShopCountry()
+    {
+        $value = $this->_config->getMerchantCountry();
+        return $value;
+    }
+
+    protected function getXShopName()
+    {
+        $value = $this->_getDataOrConfig('x_shop_name');
+        return $value;
+    }
+
     protected function getXTest()
     {
         $value = $this->_getDataOrConfig('x_test');
@@ -221,8 +243,37 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         return $value;
     }
 
-    public function shouldShowGatewayRef()
-    {
-        return $this->_getDataOrConfig('x_show_gateway_ref');
+    //log a message to our kash log
+    public function log($msg) {
+        file_put_contents($this->logFile, $this->getXShopName()." ".date('c')." ".print_r($msg, true)."\n", FILE_APPEND | LOCK_EX);
+    }
+
+    public function getLog() {
+        $result = @file_get_contents($this->logFile);
+        return $result===FALSE ? date('c')." Could not read kash log" : $result;
+    }
+
+    /**
+    *   Erase the log file once it's been sent to our server. In case it's been written to while 
+    *   we're sending it back, erase only the first $length characters and leave the rest for next time.
+    */
+    public function resetLog($length) {
+        $file = @fopen($this->logFile, "r+");
+        if (!$file) {
+            return;
+        }
+
+        if (flock($file, LOCK_EX)) {
+            $contents = '';
+            while (!feof($file)) {
+                $contents .= fread($file, 8192);
+            }
+            ftruncate($file, 0);
+            rewind($file);
+            fwrite($file, substr($contents, $length));
+            fflush($file);
+            flock($file, LOCK_UN);
+        }
+        fclose($file);
     }
 }

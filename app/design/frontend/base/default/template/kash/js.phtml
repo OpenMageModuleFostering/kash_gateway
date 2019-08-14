@@ -26,7 +26,7 @@ $_urlRequest = Mage::getUrl(Kash_Gateway_Model_Config::REQUEST_GATEWAY_KASH, arr
                                         method: 'post',
                                         onSuccess: function (response) {
                                             $('form-element').insert(response.responseText);
-                                            document.getElementsByName("request-gateway-kash")[0].submit();
+                                            jQuery("#request-gateway-kash").trigger('submit');
                                         },
                                         onFailure: checkout.ajaxFailure.bind(checkout),
                                         parameters: Form.serialize(payment.form)

@@ -27,15 +27,20 @@ class Kash_Gateway_Block_Form_Bb extends Mage_Payment_Block_Form
     {
         $this->_config = Mage::getModel('kash_gateway/config')->setMethod($this->getMethodCode());
         $locale = Mage::app()->getLocale();
-
         $mark = Mage::getConfig()->getBlockClassName('core/template');
         $mark = new $mark;
         $mark->setTemplate('kash/payment/mark.phtml')
-            ->setMessage('');
-
+            ->setPaymentImageSrc($this->_config->getPaymentImageUrl($locale->getLocaleCode()))
+            ->setMessage(
+                Mage::helper('kash_gateway')->__($this->_config->title)
+            );
         $this->setTemplate('kash/payment/redirect.phtml')
-            ->setMethodLabelAfterHtml($mark->toHtml());
-
+            ->setRedirectMessage(
+                Mage::helper('kash_gateway')->__('')
+            )
+            ->setMethodTitle('')
+            ->setMethodLabelAfterHtml($mark->toHtml())
+        ;
         $result = parent::_construct();
         return $result;
     }
