@@ -22,7 +22,7 @@
 
     </default>
 
-    <kash_gateway_bb_start>
+    <kash_gateway_offsite_start>
         <remove name="before_body_end"/>
         <reference name="head">
             <action method="addCss"><stylesheet>css/kash/start.css</stylesheet></action>
@@ -38,9 +38,9 @@
                        template="kash/container.phtml"/>
             </reference>
         </reference>
-    </kash_gateway_bb_start>
+    </kash_gateway_offsite_start>
 
-    <kash_gateway_bb_review>
+    <kash_gateway_offsite_review>
         <remove name="right"/>
         <remove name="left"/>
 
@@ -81,5 +81,5 @@
             </action>
         </reference>
         <block type="core/text_list" name="additional.product.info"/>
-    </kash_gateway_bb_review>
+    </kash_gateway_offsite_review>
 </layout>
