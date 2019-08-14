@@ -90,37 +90,43 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         'x_customer_email' => 'email',
         'x_customer_first_name' => 'firstname',
         'x_customer_last_name' => 'lastname',
-        'x_customer_shipping_country' => 'country_id', // iso-3166 two-character code
-        'x_customer_shipping_state' => 'region',
-        'x_customer_shipping_city' => 'city',
-        'x_customer_shipping_address1' => 'street',
-        'x_customer_shipping_address2' => 'street2',
-        'x_customer_shipping_zip' => 'postcode',
+        'x_customer_billing_country' => 'country_id', // iso-3166 two-character code
+        'x_customer_billing_state' => 'region',
+        'x_customer_billing_city' => 'city',
+        'x_customer_billing_address1' => 'street',
+        'x_customer_billing_address2' => 'street2',
+        'x_customer_billing_zip' => 'postcode',
         'x_customer_phone' => 'telephone',
     );
-
-    /**
-     * Map for billing address to do request (not response)
-     * Merging with $_billingAddressMap
-     *
-     * @var array
-     */
-    protected $_billingAddressMapRequest = array();
 
     /**
      * Map for shipping address import/export (extends billing address mapper)
      * @var array
      */
     protected $_shippingAddressMap = array(
+        'x_customer_shipping_first_name' => 'firstname',
+        'x_customer_shipping_last_name' => 'lastname',
         'x_customer_shipping_country' => 'country_id',
         'x_customer_shipping_state' => 'region',
         'x_customer_shipping_city' => 'city',
         'x_customer_shipping_address1' => 'street',
         'x_customer_shipping_address2' => 'street2',
         'x_customer_shipping_zip' => 'postcode',
-        'x_customer_phone' => 'telephone',
+        'x_customer_shipping_phone' => 'telephone',
     );
 
+    protected $logFile = null;
+
+
+    public function __construct() {
+        $logDir = Mage::getBaseDir("log");
+        if (!is_dir($logDir)) {
+            mkdir($logDir);
+            chmod($logDir, 0750);
+        }
+        $this->logFile = $logDir . DIRECTORY_SEPARATOR . 'kash.log';
+
+    }
     /**
      * Return request for API
      *
@@ -131,27 +137,16 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         $this->_exportLineItems($request);
 
         // import/suppress shipping address, if any
-        if ($this->getAddress()) {
-            $request = $this->_importAddresses($request);
-        }
+        $request = $this->_importAddresses($request);
 
-        //make sure we have the email
-        if (empty($request['x_customer_email'])) {
-            try {
-                $customer = Mage::getSingleton('customer/session')->getCustomer();
-                $request['x_customer_email'] = $customer->getEmail();
-            } catch (Exception $e) {
-                Mage::log($e->getMessage());
-            }
-        }
-
-        $request['x_version'] = '2';
+        $request['x_version'] = '21';
         $request['x_plugin'] = 'magento';
 
         $date = Zend_Date::now();
         $request['x_timestamp'] = $date->getIso();
         $request['x_signature'] = $this->getSignature($request, $this->getHmacKey());
 
+        $this->log('x_reference '.$request['x_reference'].': callSetBBCheckout()');
         return $request;
     }
 
@@ -194,25 +189,26 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
      */
     protected function _importAddresses(array $to)
     {
-        $billingAddress = ($this->getBillingAddress()) ? $this->getBillingAddress() : $this->getAddress();
-        $shippingAddress = $this->getAddress();
-
-        $to = Varien_Object_Mapper::accumulateByMap(
-            $billingAddress,
-            $to,
-            array_merge(array_flip($this->_billingAddressMap), $this->_billingAddressMapRequest)
-        );
+        // Fill in billing address information
+        $billingAddress = $this->getBillingAddress();
+        $to = Varien_Object_Mapper::accumulateByMap($billingAddress, $to, array_flip($this->_billingAddressMap));
         if ($regionCode = $this->_lookupRegionCodeFromAddress($billingAddress)) {
-            $to['x_customer_shipping_state'] = $regionCode;
+            // Change state to 2 letter representation (e.g. From 'California' to 'CA')
+            $to['x_customer_billing_state'] = $regionCode;
         }
-        if (!$this->getSuppressShipping()) {
+        $this->_importStreetFromAddress($billingAddress, $to, 'x_customer_billing_address1', 'x_customer_billing_address2');
+
+        // Fill in shipping address information
+        if (!$this->getSuppressShipping() && $this->getAddress()) {
+            $shippingAddress = $this->getAddress();
             $to = Varien_Object_Mapper::accumulateByMap($shippingAddress, $to, array_flip($this->_shippingAddressMap));
             if ($regionCode = $this->_lookupRegionCodeFromAddress($shippingAddress)) {
+                // Change state to 2 letter representation (e.g. From 'California' to 'CA')
                 $to['x_customer_shipping_state'] = $regionCode;
             }
-            $this->_importStreetFromAddress($billingAddress, $to, 'x_customer_shipping_address1', 'x_customer_shipping_address2');
             $this->_importStreetFromAddress($shippingAddress, $to, 'x_customer_shipping_address1', 'x_customer_shipping_address2');
         }
+
         return $to;
     }
 
@@ -244,5 +240,39 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
     {
         $value = $this->_getDataOrConfig('server_key');
         return $value;
+    }
+
+    //log a message to our kash log
+    public function log($msg) {
+        file_put_contents($this->logFile, date('c')." ".print_r($msg, true)."\n", FILE_APPEND | LOCK_EX);
+    }
+
+    public function getLog() {
+        $result = @file_get_contents($this->logFile);
+        return $result===FALSE ? date('c')." Could not read kash log" : $result;
+    }
+
+    /**
+    *   Erase the log file once it's been sent to our server. In case it's been written to while 
+    *   we're sending it back, erase only the first $length characters and leave the rest for next time.
+    */
+    public function resetLog($length) {
+        $file = @fopen($this->logFile, "r+");
+        if (!$file) {
+            return;
+        }
+
+        if (flock($file, LOCK_EX)) {
+            $contents = '';
+            while (!feof($file)) {
+                $contents .= fread($file, 8192);
+            }
+            ftruncate($file, 0);
+            rewind($file);
+            fwrite($file, substr($contents, $length));
+            fflush($file);
+            flock($file, LOCK_UN);
+        }
+        fclose($file);
     }
 }

@@ -158,22 +158,23 @@ class Kash_Gateway_Model_Checkout
      */
     public function start()
     {
-        //$this->_quote->setCouponCode('code_test');
+        $this->getApi()->log('quote '.$this->_quote->getId().': start()');
         $this->_quote->collectTotals();
 
         if (!$this->_quote->getGrandTotal() && !$this->_quote->hasNominalItems()) {
+            $this->getApi()->log('quote '.$this->_quote->getId().': Error, quote has items, but no amount.');
             Mage::throwException(Mage::helper('kash_gateway')->__('Payment does not support processing orders with zero amount. To complete your purchase, proceed to the standard checkout process.'));
         }
 
-        //Mage::helper('kash_gateway/checkout')->restoreQuote();
         $this->_quote->reserveOrderId()->save();
+        $this->getApi()->log('quote '.$this->_quote->getId().' reserved orderId/x_reference '.$this->_quote->getReservedOrderId());
+
         // prepare API
-        $this->_getApi();
-        $this->_api->setAmount($this->_quote->getGrandTotal())
+        $this->getApi()->setAmount($this->_quote->getGrandTotal())
             ->setCurrencyCode($this->_quote->getBaseCurrencyCode())
             ->setXInvoice($this->_quote->getReservedOrderId());
         list($callbackUrl, $cancelUrl, $completeUrl) = $this->_giropayUrls;
-        $this->_api->addData(array(
+        $this->getApi()->addData(array(
             'x_url_callback' => $callbackUrl,
             'x_url_cancel' => $cancelUrl,
             'x_url_complete' => $completeUrl,
@@ -182,29 +183,34 @@ class Kash_Gateway_Model_Checkout
             'x_reference' => $this->_quote->getReservedOrderId(),
         ));
 
-        // supress or export shipping address
-        if ($this->_quote->getIsVirtual()) {
-            $this->_api->setRequireBillingAddress(1);
+        // Always set billing address. This is always needed so that we can process payments.
+        $billingAddress = $this->_quote->getBillingAddress();
+        if ($billingAddress->validate() === true) {
+            $this->getApi()->setBillingAddress($billingAddress);
+        }
+        else {
+            $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': Could not validate billing address');
+        }
 
-            $this->_api->setSuppressShipping(true);
+        // Set shipping address unless the product is a virtual product
+        if ($this->_quote->getIsVirtual()) {
+            $this->getApi()->setSuppressShipping(true);
         } else {
-            $address = $this->_quote->getShippingAddress();
-            if (true === $address->validate()) {
-                $this->_api->setAddress($address);
+            // Set shipping address
+            $shippingAddress = $this->_quote->getShippingAddress();
+            if ($shippingAddress->validate() === true) {
+                $this->getApi()->setAddress($shippingAddress);
             }
-            $this->_quote->getPayment()->save();
         }
 
         // add line items
         $paymentCart = Mage::getModel('kash_gateway/cart', array($this->_quote));
-        $this->_api->setPaymentCart($paymentCart);
+        $this->getApi()->setPaymentCart($paymentCart);
 
         // call API and redirect with token
-        $token = $this->_api->getToken();
-        $token = $this->_api->callSetBBCheckout();
+        $token = $this->getApi()->callSetBBCheckout();
         $this->_redirectUrl = $this->_config->post_url;
 
-        $this->_quote->getPayment()->save();
         return $token;
     }
 
@@ -288,7 +294,7 @@ class Kash_Gateway_Model_Checkout
 
         $params = $this->getParams();
         $result = array();
-        foreach ($this->_api->responseMap as $key => $val) {
+        foreach ($this->getApi()->responseMap as $key => $val) {
             $result[$key] = $params[$val];
         }
         $payment->setAdditionalInformation($result);
@@ -351,7 +357,7 @@ class Kash_Gateway_Model_Checkout
     /** +/
      * @return Kash_Gateway_Model_Api_Bb
      */
-    public function _getApi()
+    public function getApi()
     {
         if (null === $this->_api) {
             $this->_api = Mage::getModel($this->_apiType)->setConfigObject($this->_config);
@@ -366,6 +372,7 @@ class Kash_Gateway_Model_Checkout
      */
     protected function _prepareGuestQuote()
     {
+        $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': Preparing a quote for a GUEST user.');
         $quote = $this->_quote;
         $quote->setCustomerId(null)
             ->setCustomerEmail($quote->getBillingAddress()->getEmail())
@@ -403,6 +410,7 @@ class Kash_Gateway_Model_Checkout
      */
     protected function _prepareNewCustomerQuote()
     {
+        $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': preparing a new customer quote');
         $quote = $this->_quote;
         $billing = $quote->getBillingAddress();
         $shipping = $quote->isVirtual() ? null : $quote->getShippingAddress();
@@ -462,6 +470,7 @@ class Kash_Gateway_Model_Checkout
      */
     protected function _prepareCustomerQuote()
     {
+        $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': preparing a quote for an existing customer');
         $quote = $this->_quote;
         $billing = $quote->getBillingAddress();
         $shipping = $quote->isVirtual() ? null : $quote->getShippingAddress();
@@ -501,6 +510,7 @@ class Kash_Gateway_Model_Checkout
      */
     protected function _involveNewCustomer()
     {
+        $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': involve new customer, send them confirmation email.');
         $customer = $this->_quote->getCustomer();
         if ($customer->isConfirmationRequired()) {
             $customer->sendNewAccountEmail('confirmation');
@@ -556,7 +566,7 @@ class Kash_Gateway_Model_Checkout
      */
     public function checkSignature()
     {
-        $api = $this->_getApi();
+        $api = $this->getApi();
         $signature = $this->getParams('x_signature');
         $sig = $api->getSignature($this->getParams(), $api->getHmacKey());
         if ($sig === $signature) {
@@ -645,8 +655,9 @@ class Kash_Gateway_Model_Checkout
             $ruleCoupon->save();
             return $ruleCoupon->getCouponCode();
         } catch (Exception $ex) {
+            $this->getApi()->log('Error: coupon exception');
+            $this->getApi()->log($ex);
             Mage::logException($ex);
-            //Mage::throwException($ex);
         }
     }
 }

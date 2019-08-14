@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Kash_Gateway>
-            <version>0.2.0</version>
+            <version>0.2.1</version>
         </Kash_Gateway>
     </modules>
     <global>
@@ -105,6 +105,33 @@
                     </kash_gateway>
                 </observers>
             </sales_quote_collect_totals_before>
+            <checkout_onepage_controller_success_action>
+                <observers>
+                    <kash_gateway>
+                        <type>model</type>
+                        <class>kash_gateway/observer</class>
+                        <method>sendReport</method>
+                    </kash_gateway>
+                </observers>
+            </checkout_onepage_controller_success_action>
+            <sales_order_save_after>
+                <observers>
+                    <kash_gateway>
+                        <type>model</type>
+                        <class>kash_gateway/observer</class>
+                        <method>logOrderSave</method>
+                    </kash_gateway>
+                </observers>
+            </sales_order_save_after>
+            <sales_convert_quote_to_order>
+                <observers>
+                    <kash_gateway>
+                        <type>model</type>
+                        <class>kash_gateway/observer</class>
+                        <method>logQuoteToOrder</method>
+                    </kash_gateway>
+                </observers>
+            </sales_convert_quote_to_order>
         </events>
     </frontend>
 </config>
