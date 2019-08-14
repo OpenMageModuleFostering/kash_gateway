@@ -20,10 +20,10 @@ class Kash_Gateway_Model_Config
     const METHOD_GATEWAY_KASH = 'kash_gateway';
 
     /**
-     * URL for get request - BB Checkout
+     * URL for get request
      * @var string
      */
-    const REQUEST_GATEWAY_KASH = 'gateway/bb/getRequest';
+    const REQUEST_GATEWAY_KASH = 'kash_gateway/offsite/getRequest';
 
     /**
      *  Discount code
@@ -128,33 +128,7 @@ class Kash_Gateway_Model_Config
         if (!$this->_methodCode) {
             return null;
         }
-        switch ($fieldName) {
-            case 'merchant_country':
-                return "paypal/general/{$fieldName}";
-            case 'post_url':
-            case 'x_account_id':
-            case 'server_key':
-                if (Mage::getStoreConfig($this->_mapMethodFieldset('x_test'), $this->_storeId)) {
-                    $fieldName .= '_test';
-                }
-                return "payment/{$this->_methodCode}/{$fieldName}";
-            default:
-                return "payment/{$this->_methodCode}/{$fieldName}";
-        }
-    }
-
-    /**
-     * Return merchant country code, use default country if it not specified in General settings
-     *  +/
-     * @return string
-     */
-    public function getMerchantCountry()
-    {
-        $countryCode = Mage::getStoreConfig($this->_mapMethodFieldset('merchant_country'), $this->_storeId);
-        if (!$countryCode) {
-            $countryCode = Mage::helper('core')->getDefaultCountry($this->_storeId);
-        }
-        return $countryCode;
+        return "payment/{$this->_methodCode}/{$fieldName}";
     }
 
     /**
@@ -165,19 +139,6 @@ class Kash_Gateway_Model_Config
     public function isOrderReviewStepDisabled()
     {
         return Mage::getStoreConfigFlag(self::XML_PATH_GATEWAY_KASH_SKIP_ORDER_REVIEW_STEP_FLAG);
-    }
-
-    /**
-     * Get Payment image URL
-     * Supposed to be used on payment methods selection
-     * $staticSize is applicable for static images only
-     *
-     * @param string $localeCode
-     * @return String
-     */
-    public function getPaymentImageUrl($localeCode)
-    {
-        return 'https://offsite-gateway-sim.herokuapp.com/shopify.png';
     }
 }
 

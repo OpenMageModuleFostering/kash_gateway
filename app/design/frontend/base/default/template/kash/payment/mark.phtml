@@ -4,27 +4,3 @@
  */
 ?>
 <?php echo $this->getMessage() ?>
-<br />
-<a  id="kash_direct_debit_link" 
-    href="//www.withkash.com/what-is-direct-debit"  
-    title="What is Direct Debit"
-    style="float:none;margin:0px 0px;">
-        What is Direct Debit?
-</a>
-<script>
-    function getDimensions() {
-        var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        var width = parseInt(Math.max(document.documentElement.clientWidth, window.innerWidth || 0));
-        var height = parseInt(Math.max(document.documentElement.clientHeight, window.innerHeight || 0));
-
-        if (userAgent.match(/iPad|iPhone|iPod|Android/i)) {
-            return [width, height];
-        }
-        return [width*2/3, height*2/3]
-    }
-
-    document.getElementById("kash_direct_debit_link").setAttribute("class", "lightwindow");
-    document.getElementById("kash_direct_debit_link").setAttribute("params", "lightwindow_loading_animation=false,lightwindow_width="+getDimensions()[0]+",lightwindow_height="+getDimensions()[1]);
-
-
-</script>

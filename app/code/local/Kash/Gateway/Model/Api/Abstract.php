@@ -134,10 +134,6 @@ abstract class Kash_Gateway_Model_Api_Abstract extends Varien_Object
             }
         }
 
-        // TODO: Eventually fix this properly
-        // https://app.asana.com/0/56892580162484/63230238408321
-        $result['x_test'] = 'false';
-
         return $result;
     }
 

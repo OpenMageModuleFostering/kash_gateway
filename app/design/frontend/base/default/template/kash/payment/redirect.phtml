@@ -4,5 +4,31 @@
  */
 ?>
 <ul class="form-list" id="payment_form_<?php echo $this->getMethodCode() ?>">
-    <li class="form-alt"><?php echo $this->getRedirectMessage() ?></li>
+    <li class="form-alt">
+        <a  id="kash_direct_debit_link"
+            href="//www.withkash.com/what-is-direct-debit"
+            title="What is Direct Debit"
+            target="_blank"
+            style="float:none;margin:0px 0px;">
+                What is Direct Debit?
+        </a>
+        <script>
+            function getDimensions() {
+                var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                var width = parseInt(Math.max(document.documentElement.clientWidth, window.innerWidth || 0));
+                var height = parseInt(Math.max(document.documentElement.clientHeight, window.innerHeight || 0));
+
+                if (userAgent.match(/iPad|iPhone|iPod|Android/i)) {
+                    return [width, height];
+                }
+                //On desktop, use up only 2/3rds of the screen which usually looks better than full screen.
+                return [width*2/3, height*2/3]
+            }
+
+            document.getElementById("kash_direct_debit_link").setAttribute("class", "lightwindow");
+            document.getElementById("kash_direct_debit_link").setAttribute("params", "lightwindow_loading_animation=false,lightwindow_width="+getDimensions()[0]+",lightwindow_height="+getDimensions()[1]);
+
+
+        </script>
+    </li>
 </ul>

@@ -1,11 +1,9 @@
 <?php
 
 /**
- * Bb Checkout Controller
- *
- * @author  Blue Badger <jonathan@badger.blue>
+ * Offsite Checkout Controller
  */
-class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
+class Kash_Gateway_OffsiteController extends Mage_Core_Controller_Front_Action
 {
     /**
      * @var Kash_Gateway_Model_Checkout
@@ -58,8 +56,10 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
     /**
      * Get form for requesting form
      */
-    public function startAction(){
-        $this->api->log('quote '.$this->_getQuote()->getId().': startAction()');
+    public function startAction()
+    {
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('quote '.$this->_getQuote()->getId().': startAction()');
         $paymentParams = $this->getPaymentRequest();
         if(!$paymentParams){
             return;
@@ -78,7 +78,8 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
      */
     public function getRequestAction()
     {
-        $this->api->log('quote '.$this->_getQuote()->getId().': getRequestAction()');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('quote '.$this->_getQuote()->getId().': getRequestAction()');
         try {
             $paymentParams = $this->getPaymentRequest();
             if(!$paymentParams){
@@ -99,7 +100,7 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
         } catch (Mage_Core_Exception $e) {
             $this->_getCheckoutSession()->addError($e->getMessage());
         } catch (Exception $e) {
-            $this->api->log($e);
+            $logger->log($e);
             $this->_getCheckoutSession()->addError($this->__('Unable to start BB Checkout.'));
             Mage::logException($e);
         }
@@ -112,7 +113,8 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
      */
     public function cancelAction()
     {
-        $this->api->log('x_reference '.$this->_getQuote()->getReservedOrderId().': cancelAction()');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('x_reference '.$this->_getQuote()->getReservedOrderId().': cancelAction()');
         $this->_initToken(false);
         $this->_redirect('checkout/cart');
     }
@@ -123,7 +125,8 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
     public function callbackAction()
     {
         $param = Mage::app()->getRequest()->getParam('x_reference');
-        $this->api->log('x_reference '.$param.': callbackAction()');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('x_reference '.$param.': callbackAction()');
 
         $quote = Mage::getModel('sales/quote')->load($param, 'reserved_order_id');
         $this->_quote = $quote;
@@ -133,10 +136,11 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
             'config' => $this->_config,
             'quote' => $quote,
         ));
-        $this->api->log('x_reference '.$this->_getQuote()->getReservedOrderId().': quote is active? '.$quote->getIsActive());
+        $logger->log('x_reference '.$this->_getQuote()->getReservedOrderId().': quote is active? '.$quote->getIsActive());
 
         $params = Mage::app()->getRequest()->getParams();
         $this->_checkout->setParams($params);
+        $kashTransactionId = $this->_checkout->getParams('x_gateway_reference');
 
         $this->_checkout->loginUser();
 
@@ -149,21 +153,21 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
                 $order = $this->_checkout->getOrder();
 
                 if ($order->getIncrementId() == $param) {
-                    $this->invoiceOrder($order);
+                    $this->invoiceOrder($order, $kashTransactionId);
                     $connection->commit();
                 }
                 else {
-                    $this->api->log('x_reference '.$param.': The new order id is not the expected order id! Rolling back');
+                    $logger->log('x_reference '.$param.': The new order id is not the expected order id! Rolling back');
                     $connection->rollback();
                 }
             } catch (Exception $e) {
-                $this->api->log('x_reference '.$param. ': Error, rolling back');
-                $this->api->log($e);
+                $logger->log('x_reference '.$param. ': Error, rolling back');
+                $logger->log($e);
                 $connection->rollback();
             }
         }
         else {
-            $this->api->log('x_reference '.$param.': Checks failed, will not try and create order');
+            $logger->log('x_reference '.$param.': Checks failed, will not try and create order');
         }
     }
 
@@ -172,20 +176,21 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
      */
     public function completeAction()
     {
-        $this->api->log('completeAction()');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('completeAction()');
         try {
             if (!$this->_initCheckout(true)) {
                 $this->getResponse()->setRedirect(Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
                 return;
             }
             if (!$this->_checkout->checkSignature()) {
-                $this->api->log('x_reference '.$this->_checkout->getParams('x_reference').': All requests and responses must be signed/verified using HMAC-SHA256');
+                $logger->log('x_reference '.$this->_checkout->getParams('x_reference').': All requests and responses must be signed/verified using HMAC-SHA256');
                 Mage::getSingleton('checkout/session')->addError('Not valid signature');
                 $this->_redirect('checkout/cart');
                 return;
             }
             if (!$this->_checkout->checkResult()) {
-                $this->api->log('x_reference '.$this->_checkout->getParams('x_reference').': Result not completed');
+                $logger->log('x_reference '.$this->_checkout->getParams('x_reference').': Result not completed');
                 Mage::getSingleton('checkout/session')->addError('Kash Gateway not completed');
                 $this->_redirect('checkout/cart');
                 return;
@@ -223,8 +228,8 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
         } catch (Mage_Core_Exception $e) {
             Mage::getSingleton('checkout/session')->addError($e->getMessage());
         } catch (Exception $e) {
-            $this->api->log('x_reference '.$xref.': Could not complete action');
-            $this->api->log($e);
+            $logger->log('x_reference '.$xref.': Could not complete action');
+            $logger->log($e);
             Mage::getSingleton('checkout/session')->addError($this->__('Unable to process Kash Gateway Checkout approval.'));
             Mage::logException($e);
         }
@@ -261,7 +266,8 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
             Mage::getSingleton('checkout/session')->addError(
                 $this->__('Unable to initialize Kash Gateway Checkout review.')
             );
-            $this->api->log('Could not review order');
+            $logger = Mage::helper('kash_gateway')->logger();
+            $logger->log('Could not review order');
             Mage::logException($e);
         }
         $this->_redirect('checkout/cart');
@@ -272,9 +278,10 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
      *
      * @param $order Mage_Sales_Model_Order
      */
-    protected function invoiceOrder($order)
+    protected function invoiceOrder($order, $kashTransactionId)
     {
-        $this->api->log('order '.$order->getIncrementId().': Invoicing order');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('order '.$order->getIncrementId().': Invoicing order');
         if ($order->getState() == Mage_Sales_Model_Order::STATE_NEW) {
             try {
                 if (!$order->canInvoice()) {
@@ -283,7 +290,8 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
                 }
                 $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
 
-                $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+                $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_ONLINE);
+                $invoice->setTransactionId($kashTransactionId);
                 $invoice->register();
 
                 $invoice->getOrder()->setCustomerNoteNotify(false);
@@ -297,8 +305,8 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
 
                 $transactionSave->save();
             } catch (Exception $e) {
-                $this->api->log('order '.$order->getIncrementId().': Could not invoice order.');
-                $this->api->log($e);
+                $logger->log('order '.$order->getIncrementId().': Could not invoice order.');
+                $logger->log($e);
                 $order->addStatusHistoryComment('Kash Gateway: Exception occurred during automatically Invoice action. Exception message: ' . $e->getMessage(), false);
                 $order->save();
             }
@@ -315,11 +323,12 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
      */
     protected function _initToken($setToken = null)
     {
+        $logger = Mage::helper('kash_gateway')->logger();
         if (null !== $setToken) {
             if (false === $setToken) {
                 // security measure for avoid unsetting token twice
                 if (!$this->_getSession()->getBBCheckoutToken()) {
-                    $this->api->log('checkout token does not exist');
+                    $logger->log('checkout token does not exist');
                     Mage::throwException($this->__('Payment Kash Gateway Checkout Token does not exist.'));
                 }
                 $this->_getSession()->unsBBCheckoutToken();
@@ -330,7 +339,7 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
         }
         if ($setToken = $this->getRequest()->getParam('x_reference')) {
             if ($setToken !== $this->_getSession()->getBBCheckoutToken()) {
-                $this->api->log('wrong token');
+                $logger->log('wrong token');
                 Mage::throwException($this->__('Wrong Payment Kash Gateway Checkout Token specified.'));
             }
         } else {
@@ -397,11 +406,12 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
      */
     protected function _initCheckout($callback = false)
     {
+        $logger = Mage::helper('kash_gateway')->logger();
         $quote = $this->_getQuote();
         if (!$callback && (!$quote->hasItems() || $quote->getHasError())) {
-            $this->api->log('x_reference '.$quote->getReservedOrderId().': Unable to initialize Checkout');
-            $this->api->log($quote->hasItems());
-            $this->api->log($quote->getHasError());
+            $logger->log('x_reference '.$quote->getReservedOrderId().': Unable to initialize Checkout');
+            $logger->log($quote->hasItems());
+            $logger->log($quote->getHasError());
             Mage::log(Mage::helper('kash_gateway')->__('Unable to initialize Kash Gateway Checkout.'));
             return null;
         }
@@ -419,8 +429,10 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
     /**
      * Make params for Payment BB
      */
-    protected function getPaymentRequest(){
-        $this->api->log('quote '.$this->_getQuote()->getId().': setting payment request');
+    protected function getPaymentRequest()
+    {
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('quote '.$this->_getQuote()->getId().': setting payment request');
         $this->_initCheckout();
 
         if ($this->_getQuote()->getIsMultiShipping()) {
@@ -450,11 +462,10 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
             return null;
         }
 
-        // giropay
-        $this->_checkout->prepareGiropayUrls(
-            Mage::getUrl('gateway/bb/callback', array('_secure'=>true)),
-            Mage::getUrl('gateway/bb/cancel', array('_secure'=>true)),
-            Mage::getUrl('gateway/bb/complete', array('_secure'=>true))
+        $this->_checkout->setCallbackUrls(
+            Mage::getUrl('kash_gateway/offsite/callback', array('_secure'=>true)),
+            Mage::getUrl('kash_gateway/offsite/cancel', array('_secure'=>true)),
+            Mage::getUrl('kash_gateway/offsite/complete', array('_secure'=>true))
         );
 
         $params = $this->_checkout->start();

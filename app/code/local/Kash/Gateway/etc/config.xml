@@ -1,13 +1,33 @@
 <?xml version="1.0"?>
+
+<!-- The root node for a Magento module configuration -->
 <config>
+
     <modules>
+        <!--
+            This tag must match the namespace and module name exactly, but
+            with slash replaced with underscore.
+
+            Our namespace is "Kash" and our module name is "Gateway".
+        -->
         <Kash_Gateway>
-            <version>0.2.1</version>
+            <version>0.2.10</version>
         </Kash_Gateway>
     </modules>
+
+    <!-- Configure module's behaviour in the `global` area -->
     <global>
+        <!-- Defining models -->
         <models>
+            <!--
+                Unique identifier in the model's node.
+                By convention, we put the module's name in lowercase.
+            -->
             <kash_gateway>
+                <!--
+                    The path to our models directory, with directory separators
+                    replaced by underscores.
+                -->
                 <class>Kash_Gateway_Model</class>
                 <resourceModel>kash_gateway_resource</resourceModel>
             </kash_gateway>
@@ -15,6 +35,7 @@
                 <class>Kash_Gateway_Model_Resource</class>
             </kash_gateway_resource>
         </models>
+
         <blocks>
             <kash_gateway>
                 <class>Kash_Gateway_Block</class>
@@ -25,11 +46,17 @@
                 </rewrite>
             </adminhtml>
         </blocks>
+
         <helpers>
             <kash_gateway>
+                <!--
+                    The path to our Helper directory, with directory separators
+                    replaced by underscores.
+                -->
                 <class>Kash_Gateway_Helper</class>
             </kash_gateway>
         </helpers>
+
         <resources>
             <kash_gateway_setup>
                 <setup>
@@ -37,6 +64,7 @@
                 </setup>
             </kash_gateway_setup>
         </resources>
+
         <fieldsets>
             <sales_convert_quote_payment>
                 <x_gateway_reference>
@@ -46,16 +74,7 @@
         </fieldsets>
     </global>
 
-    <frontend>
-        <layout>
-            <updates>
-                <kash_gateway>
-                    <file>kash/gateway.xml</file>
-                </kash_gateway>
-            </updates>
-        </layout>
-    </frontend>
-
+    <!-- Configure module's behaviour in the `adminhtml` area -->
     <adminhtml>
         <events>
             <core_collection_abstract_load_before>
@@ -70,12 +89,28 @@
         </events>
     </adminhtml>
 
+    <!--
+        Default values for our module's configuration. The values here serve as
+        defaults for the fields defined in `system.xml`.
+    -->
     <default>
         <payment>
+            <!--
+                Unique identifier in the model's node.
+                By convention, we put the module's name in lowercase.
+            -->
             <kash_gateway>
+                <!--
+                    This specifies the class Magneto will talk to for
+                    information about this payment method.
+
+                    It's in lower case and with slash replaced with
+                    underscore.
+                -->
+                <model>kash_gateway/offsite</model>
+
                 <active>0</active>
                 <bbtypes>AE,VI,MC,DI</bbtypes>
-                <model>kash_gateway/method_bb</model>
                 <order_status>processing</order_status>
                 <title>Direct Debit or Credit Card</title>
                 <post_url>https://gateway.withkash.com/</post_url>
@@ -85,17 +120,26 @@
         </payment>
     </default>
 
+    <!-- Configure module's behaviour in the `frontend` area -->
     <frontend>
+        <layout>
+            <updates>
+                <kash_gateway>
+                    <file>kash/gateway.xml</file>
+                </kash_gateway>
+            </updates>
+        </layout>
         <routers>
             <kash_gateway>
                 <use>standard</use>
                 <args>
                     <module>Kash_Gateway</module>
-                    <frontName>gateway</frontName>
+                    <frontName>kash_gateway</frontName>
                 </args>
             </kash_gateway>
         </routers>
         <events>
+            <!-- Event emitted by `app/code/core/Mage/Sales/Model/Quote.php` -->
             <sales_quote_collect_totals_before>
                 <observers>
                     <kash_gateway>
@@ -105,6 +149,8 @@
                     </kash_gateway>
                 </observers>
             </sales_quote_collect_totals_before>
+
+            <!-- Event emitted by `app/code/core/Mage/Checkout/controllers/OnepageController.php` -->
             <checkout_onepage_controller_success_action>
                 <observers>
                     <kash_gateway>
@@ -114,6 +160,11 @@
                     </kash_gateway>
                 </observers>
             </checkout_onepage_controller_success_action>
+
+            <!--
+                "_save_after" event emitted by `app/code/core/Mage/Core/Model/Abstract.php`
+                `_eventPrefix` defined in `app/code/core/Mage/Sales/Model/Order.php`
+            -->
             <sales_order_save_after>
                 <observers>
                     <kash_gateway>
@@ -123,6 +174,8 @@
                     </kash_gateway>
                 </observers>
             </sales_order_save_after>
+
+            <!-- Event emitted by `app/code/core/Mage/Sales/Model/Convert/Quote.php` -->
             <sales_convert_quote_to_order>
                 <observers>
                     <kash_gateway>
