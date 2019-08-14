@@ -4,6 +4,22 @@
         <reference name="before_body_end">
             <block type="core/template" template="kash/js.phtml" before="-"/>
         </reference>
+
+        <reference name="head">
+            <action method="addItem">
+                <type>skin_css</type>
+                <name>css/kash/start.css</name>
+            </action>
+            <action method="addItem">
+                <type>skin_css</type>
+                <name>css/kash/lightwindow.css</name>
+            </action>
+            <action method="addItem">
+                <type>skin_js</type>
+                <name>js/kash/lightwindow.js</name>
+            </action>
+        </reference>
+
     </default>
 
     <kash_gateway_bb_start>

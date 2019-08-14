@@ -275,18 +275,6 @@ class Kash_Gateway_Model_Checkout
             return;
         }
 
-        switch ($order->getState()) {
-            // even after placement payment can disallow to authorize/capture, but will wait until bank transfers money
-            case Mage_Sales_Model_Order::STATE_PENDING_PAYMENT:
-                // TODO
-                break;
-            // regular placement, when everything is ok
-            case Mage_Sales_Model_Order::STATE_PROCESSING:
-            case Mage_Sales_Model_Order::STATE_COMPLETE:
-            case Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW:
-                $order->queueNewOrderEmail();
-                break;
-        }
         $this->_order = $order;
     }
 

@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Kash_Gateway>
-            <version>0.1.1</version>
+            <version>0.1.4</version>
         </Kash_Gateway>
     </modules>
     <global>
@@ -67,15 +67,6 @@
                     </kash_gateway>
                 </observers>
             </core_collection_abstract_load_before>
-            <payment_info_block_prepare_specific_information>
-                <observers>
-                    <kash_gateway>
-                        <type>model</type>
-                        <class>kash_gateway/observer</class>
-                        <method>paymentInfoBlockPrepareSpecificInformation</method>
-                    </kash_gateway>
-                </observers>
-            </payment_info_block_prepare_specific_information>
         </events>
     </adminhtml>
 

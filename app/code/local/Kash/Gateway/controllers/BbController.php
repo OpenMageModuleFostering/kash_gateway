@@ -282,6 +282,7 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
                 $invoice->getOrder()->setCustomerNoteNotify(false);
                 $invoice->getOrder()->setIsInProcess(true);
                 $order->addStatusHistoryComment('Automatically INVOICED by Kash Gateway.', false);
+                $order->sendNewOrderEmail();
 
                 $transactionSave = Mage::getModel('core/resource_transaction')
                     ->addObject($invoice)

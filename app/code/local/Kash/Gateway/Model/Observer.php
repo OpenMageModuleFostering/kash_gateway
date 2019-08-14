@@ -42,27 +42,5 @@ class Kash_Gateway_Model_Observer extends Varien_Object
         }
     }
 
-    /**
-     * Add payment data to info block
-     *
-     * @param Varien_Object $observer
-     * @return Mage_Centinel_Model_Observer
-     */
-    public function paymentInfoBlockPrepareSpecificInformation($observer)
-    {
-        if ($observer->getEvent()->getBlock()->getIsSecureMode()) {
-            return;
-        }
-
-        $order = $observer->getEvent()->getPayment()->getOrder();
-        $discountAmount = abs($order->getDiscountAmount());
-        $subtotal = $order->getSubtotal();
-
-        $percent = round($discountAmount * 100 / $subtotal, 2);
-        $transport = $observer->getEvent()->getTransport();
-        $transport->setData('Gateway percent', $percent . '%');
-
-        return $this;
-    }
 }
 
