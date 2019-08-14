@@ -128,7 +128,7 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         $request = $this->_importAddresses($request);
 
         $request['x_test'] = ($this->getXTest() === '1') ? 'true' : 'false';
-        $request['x_version'] = '0.2.7';
+        $request['x_version'] = '0.2.8';
         $request['x_plugin'] = 'magento';
 
         $date = Zend_Date::now();
@@ -152,7 +152,7 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         ksort($request);
         $signature = '';
         foreach ($request as $key => $val) {
-            if ($key === 'x_signature') {
+            if ($key === 'x_signature' || substr($key, 0, 2) !== "x_") {
                 continue;
             }
             $signature .= $key . $val;

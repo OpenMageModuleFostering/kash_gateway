@@ -11,7 +11,7 @@
             Our namespace is "Kash" and our module name is "Gateway".
         -->
         <Kash_Gateway>
-            <version>0.2.7</version>
+            <version>0.2.8</version>
         </Kash_Gateway>
     </modules>
 
