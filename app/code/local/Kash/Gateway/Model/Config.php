@@ -128,26 +128,7 @@ class Kash_Gateway_Model_Config
         if (!$this->_methodCode) {
             return null;
         }
-        switch ($fieldName) {
-            case 'merchant_country':
-                return "paypal/general/{$fieldName}";
-            default:
-                return "payment/{$this->_methodCode}/{$fieldName}";
-        }
-    }
-
-    /**
-     * Return merchant country code, use default country if it not specified in General settings
-     *  +/
-     * @return string
-     */
-    public function getMerchantCountry()
-    {
-        $countryCode = Mage::getStoreConfig($this->_mapMethodFieldset('merchant_country'), $this->_storeId);
-        if (!$countryCode) {
-            $countryCode = Mage::helper('core')->getDefaultCountry($this->_storeId);
-        }
-        return $countryCode;
+        return "payment/{$this->_methodCode}/{$fieldName}";
     }
 
     /**

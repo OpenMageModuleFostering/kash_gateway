@@ -140,7 +140,7 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         $request = $this->_importAddresses($request);
 
         $request['x_test'] = ($this->getXTest() === '1') ? 'true' : 'false';
-        $request['x_version'] = '24';
+        $request['x_version'] = '25';
         $request['x_plugin'] = 'magento';
 
         $date = Zend_Date::now();
@@ -219,12 +219,6 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         return $value;
     }
 
-    protected function getXShopCountry()
-    {
-        $value = $this->_config->getMerchantCountry();
-        return $value;
-    }
-
     protected function getXShopName()
     {
         $value = $this->_getDataOrConfig('x_shop_name');
@@ -242,6 +236,12 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         $value = $this->_getDataOrConfig('server_key');
         return $value;
     }
+
+    public function shouldShowGatewayRef()
+    {
+        return $this->_getDataOrConfig('x_show_gateway_ref');
+    }
+
 
     //log a message to our kash log
     public function log($msg) {
