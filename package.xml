@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
     <name>kash_gateway</name>
-    <version>0.2.6</version>
+    <version>0.2.7</version>
     <stability>stable</stability>
     <license>MITL</license>
     <channel>community</channel>
@@ -106,7 +106,7 @@ Direct Debit payment works by having the customers use their bank account to pay
                         <file name="KashApi.php" hash="9a15c80500c3b61759ee1b3e8934c293"/>
                     </dir>
                     <dir name="etc">
-                        <file name="config.xml" hash="e125d665f5bc5a884df326048e83e410"/>
+                        <file name="config.xml" hash="cd7c6bf4ec113bcf39eb414cb40dde04"/>
                         <file name="system.xml" hash="ca30f6ca733fd3bb8bf7acc0ebe4d705"/>
                     </dir>
                     <dir name="data">
@@ -128,7 +128,7 @@ Direct Debit payment works by having the customers use their bank account to pay
                         <file name="Session.php" hash="1778fbe493d2ceb81d8a20b58a21ce3c"/>
                         <dir name="Api">
                             <file name="Abstract.php" hash="dda4315e8a6b95ef3017f90cecfb250d"/>
-                            <file name="Bb.php" hash="7720b7f19dd3e2cefe0809c92056dbe9"/>
+                            <file name="Bb.php" hash="50b1ede865e68d894b2960c2e635745e"/>
                         </dir>
                     </dir>
                     <dir name="Helper">
