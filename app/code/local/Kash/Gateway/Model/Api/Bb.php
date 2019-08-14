@@ -140,7 +140,7 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         $request = $this->_importAddresses($request);
 
         $request['x_test'] = ($this->getXTest() === '1') ? 'true' : 'false';
-        $request['x_version'] = '22';
+        $request['x_version'] = '23';
         $request['x_plugin'] = 'magento';
 
         $date = Zend_Date::now();
