@@ -1,0 +1,13 @@
+<?php
+$input = $this->getInput();
+$action = $this->getPostUrl();
+?>
+
+<form id="request-gateway-kash" name="request-gateway-kash" action="<?php echo $action ?>" method="post">
+    <div>
+        <?php foreach($input as $key => $value): ?>
+            <input type="hidden" name="<?php echo $key; ?>" value="<?php echo $value; ?>"/>
+        <?php endforeach; ?>
+    </div>
+</form>
+

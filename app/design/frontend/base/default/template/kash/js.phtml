@@ -1,0 +1,56 @@
+<?php
+$_methodCode = Kash_Gateway_Model_Config::METHOD_GATEWAY_KASH;
+$_urlRequest = Mage::getUrl(Kash_Gateway_Model_Config::REQUEST_GATEWAY_KASH, array('_secure'=>true));
+?>
+<div id="form-element" style="display: none"></div>
+
+<script type="text/javascript">
+    //<![CDATA[
+    Payment.addMethods({
+        save: function () {
+            if (checkout.loadWaiting != false) return;
+            var validator = new Validation(this.form);
+            if (this.validate() && validator.validate()) {
+                checkout.setLoadWaiting('payment');
+                if (this.currentMethod == '<?php echo $_methodCode ?>') {
+                    new Ajax.Request(
+                        payment.saveUrl,
+                        {
+                            asynchronous: true,
+                            method: 'post',
+                            onSuccess: function (response) {
+                                new Ajax.Request(
+                                    '<?php echo $_urlRequest ?>',
+                                    {
+                                        asynchronous: true,
+                                        method: 'post',
+                                        onSuccess: function (response) {
+                                            $('form-element').insert(response.responseText);
+                                            jQuery("#request-gateway-kash").trigger('submit');
+                                        },
+                                        onFailure: checkout.ajaxFailure.bind(checkout),
+                                        parameters: Form.serialize(payment.form)
+                                    }
+                                );
+                            },
+                            onFailure: checkout.ajaxFailure.bind(checkout),
+                            parameters: Form.serialize(this.form)
+                        });
+                } else {
+                    var request = new Ajax.Request(
+                        this.saveUrl,
+                        {
+                            asynchronous: true,
+                            method: 'post',
+                            onComplete: this.onComplete,
+                            onSuccess: this.onSave,
+                            onFailure: checkout.ajaxFailure.bind(checkout),
+                            parameters: Form.serialize(this.form)
+                        }
+                    );
+                }
+            }
+        }
+    });
+    //]]>
+</script>

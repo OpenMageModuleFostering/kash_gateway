@@ -1,0 +1,16 @@
+{
+    "name": "OpenMageModuleFostering/kash_gateway",
+    "type": "magento-module",
+    "license": "MITL",
+    "homepage": "",
+    "description": "Payment gateway that allows customers in the US to make payment via Direct Debit or Credit Card for just 0.5%.",
+    "authors": [
+    {
+        "name": "Kash Corp.",
+        "email": "info@withkash.com"
+    }
+],
+    "suggest": {
+        "magento-hackathon/magento-composer-installer": "*"
+    }
+}

@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<layout version="0.1.0">
+    <default>
+        <reference name="before_body_end">
+            <block type="core/template" template="kash/js.phtml" before="-"/>
+        </reference>
+    </default>
+
+    <kash_gateway_bb_start>
+        <remove name="before_body_end"/>
+        <reference name="head">
+            <action method="addJs">
+                <script>lib/jquery/jquery-1.10.2.min.js</script>
+            </action>
+            <action method="addCss"><stylesheet>css/kash/start.css</stylesheet></action>
+        </reference>
+        <reference name="root">
+            <action method="setTemplate">
+                <template>page/empty.phtml</template>
+            </action>
+            <reference name="content">
+                <block type="core/template" name="block_form_request" as="block.form.request"
+                       template="kash/form.phtml"/>
+                <block type="core/template" name="container_form" as="container_form"
+                       template="kash/container.phtml"/>
+            </reference>
+        </reference>
+    </kash_gateway_bb_start>
+
+    <kash_gateway_bb_review>
+        <remove name="right"/>
+        <remove name="left"/>
+
+        <reference name="root">
+            <action method="setTemplate">
+                <template>page/1column.phtml</template>
+            </action>
+        </reference>
+        <reference name="content">
+            <!--<block type="checkout/onepage_success" name="checkout.success" template="checkout/success.phtml"/>-->
+            <block type="kash_gateway/review" name="gateway.kash.review" template="kash/payment/review.phtml">
+                <block type="kash_gateway/review_details" name="gateway.kash.review.details" as="details"
+                       template="kash/payment/review/details.phtml">
+                    <action method="addItemRender">
+                        <type>default</type>
+                        <block>checkout/cart_item_renderer</block>
+                        <template>checkout/onepage/review/item.phtml</template>
+                    </action>
+                    <action method="addItemRender">
+                        <type>grouped</type>
+                        <block>checkout/cart_item_renderer_grouped</block>
+                        <template>checkout/onepage/review/item.phtml</template>
+                    </action>
+                    <action method="addItemRender">
+                        <type>configurable</type>
+                        <block>checkout/cart_item_renderer_configurable</block>
+                        <template>checkout/onepage/review/item.phtml</template>
+                    </action>
+                    <block type="checkout/cart_totals" name="gateway.kash.review.details.totals" as="totals"
+                           template="checkout/onepage/review/totals.phtml"/>
+                </block>
+            </block>
+        </reference>
+        <reference name="head">
+            <action method="addItem">
+                <type>skin_js</type>
+                <name>js/checkout/review.js</name>
+            </action>
+        </reference>
+        <block type="core/text_list" name="additional.product.info"/>
+    </kash_gateway_bb_review>
+</layout>

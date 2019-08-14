@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package>
+    <name>kash_gateway</name>
+    <version>0.1.0</version>
+    <stability>stable</stability>
+    <license>MITL</license>
+    <channel>community</channel>
+    <extends/>
+    <summary>Payment gateway that allows customers in the US to make payment via Direct Debit or Credit Card for just 0.5%.</summary>
+    <description>Kash (http://www.withkash.com) allows you to accept payments for just 0.5%!&#xD;
+&#xD;
+Kash does this by offering customers the option to pay using their bank account. For customers that don't want to use their bank account to pay, they'll have the option of using credit card instead. You can choose to either charge the credit card processing fee to the customer, or pay for the fee yourself like you do currently.&#xD;
+&#xD;
+You will need a Kash account in order to use this gateway. Please contact info@withkash.com for any questions.</description>
+    <notes>v0.1.0 - Initial Release</notes>
+    <authors>
+        <author>
+            <name>Kash Corp.</name>
+            <user>withkash</user>
+            <email>info@withkash.com</email>
+        </author>
+    </authors>
+    <compatible/>
+</package>
