@@ -262,7 +262,6 @@ class Kash_Gateway_Model_Checkout
 
         $this->setAdditionalInformation();
         $this->_ignoreAddressValidation();
-        $this->_applyDiscount();
         $this->_quote->collectTotals();
         $service = Mage::getModel('sales/service_quote', $this->_quote);
         $service->submitAll();
