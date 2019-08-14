@@ -11,7 +11,7 @@
             Our namespace is "Kash" and our module name is "Gateway".
         -->
         <Kash_Gateway>
-            <version>0.2.11</version>
+            <version>0.2.12</version>
         </Kash_Gateway>
     </modules>
 
@@ -74,21 +74,6 @@
         </fieldsets>
     </global>
 
-    <!-- Configure module's behaviour in the `adminhtml` area -->
-    <adminhtml>
-        <events>
-            <core_collection_abstract_load_before>
-                <observers>
-                    <kash_gateway>
-                        <type>model</type>
-                        <class>kash_gateway/observer</class>
-                        <method>coreCollectionAbstractLoadBefore</method>
-                    </kash_gateway>
-                </observers>
-            </core_collection_abstract_load_before>
-        </events>
-    </adminhtml>
-
     <!--
         Default values for our module's configuration. The values here serve as
         defaults for the fields defined in `system.xml`.
@@ -139,17 +124,6 @@
             </kash_gateway>
         </routers>
         <events>
-            <!-- Event emitted by `app/code/core/Mage/Sales/Model/Quote.php` -->
-            <sales_quote_collect_totals_before>
-                <observers>
-                    <kash_gateway>
-                        <type>model</type>
-                        <class>kash_gateway/observer</class>
-                        <method>salesQuoteCollectTotalsBefore</method>
-                    </kash_gateway>
-                </observers>
-            </sales_quote_collect_totals_before>
-
             <!-- Event emitted by `app/code/core/Mage/Checkout/controllers/OnepageController.php` -->
             <checkout_onepage_controller_success_action>
                 <observers>

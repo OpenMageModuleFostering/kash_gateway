@@ -26,9 +26,9 @@ class Kash_Gateway_Model_Config
     const REQUEST_GATEWAY_KASH = 'kash_gateway/offsite/getRequest';
 
     /**
-     *  Discount code
+     *  Transaction type
      */
-    const GATEWAY_KASH_DISCOUNT_CODE ='discount_gatewaykash';
+    const TRANSACTION_TYPE = 'x_transaction_type';
 
     /**
      * Current payment method code

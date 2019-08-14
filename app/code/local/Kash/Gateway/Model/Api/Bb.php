@@ -40,7 +40,8 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         'Amount' => 'x_amount',
         'Result' => 'x_result',
         'Gateway Reference' => 'x_gateway_reference',
-        'Test mode' => 'x_test'
+        'Test mode' => 'x_test',
+        Kash_Gateway_Model_Config::TRANSACTION_TYPE => 'x_transaction_type'
     );
 
     /**
@@ -128,7 +129,7 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
         $request = $this->_importAddresses($request);
 
         $request['x_test'] = ($this->getXTest() === '1') ? 'true' : 'false';
-        $request['x_version'] = '0.2.11';
+        $request['x_version'] = '0.2.12';
         $request['x_plugin'] = 'magento';
 
         $date = Zend_Date::now();
