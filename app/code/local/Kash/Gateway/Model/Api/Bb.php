@@ -145,6 +145,9 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
             }
         }
 
+        $request['x_version'] = '2';
+        $request['x_plugin'] = 'magento';
+
         $date = Zend_Date::now();
         $request['x_timestamp'] = $date->getIso();
         $request['x_signature'] = $this->getSignature($request, $this->getHmacKey());

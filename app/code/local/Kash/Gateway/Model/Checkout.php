@@ -375,6 +375,14 @@ class Kash_Gateway_Model_Checkout
     }
 
     /**
+    *   Logins the user so orders can be created with the right account
+    */
+    public function loginUser() {
+        $customerId = $this->_lookupCustomerId();
+        $this->getCustomerSession()->loginById($customerId);
+    }
+
+    /**
      * Checks if customer with email coming from Express checkout exists
      *  +/
      * @return int
@@ -459,6 +467,7 @@ class Kash_Gateway_Model_Checkout
         $shipping = $quote->isVirtual() ? null : $quote->getShippingAddress();
 
         $customer = $this->getCustomerSession()->getCustomer();
+
         if (!$billing->getCustomerId() || $billing->getSaveInAddressBook()) {
             $customerBilling = $billing->exportCustomerAddress();
             $customer->addAddress($customerBilling);
@@ -641,3 +650,4 @@ class Kash_Gateway_Model_Checkout
         }
     }
 }
+

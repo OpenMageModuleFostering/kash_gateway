@@ -116,25 +116,38 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
     public function callbackAction()
     {
         $param = Mage::app()->getRequest()->getParam('x_reference');
-        $quota = Mage::getModel('sales/quote')->load($param, 'reserved_order_id');
-        $this->_quote = $quota;
+        $quote = Mage::getModel('sales/quote')->load($param, 'reserved_order_id');
+        $this->_quote = $quote;
 
         $this->_config->setStoreId($this->_getQuote()->getStoreId());
         $this->_checkout = Mage::getSingleton($this->_checkoutType, array(
             'config' => $this->_config,
-            'quote' => $quota,
+            'quote' => $quote,
         ));
 
         $params = Mage::app()->getRequest()->getParams();
         $this->_checkout->setParams($params);
 
-        if ($this->_checkout->checkSignature() &&
-            $this->_checkout->checkResult() &&
-            $quota->getIsActive()
-        ) {
-            $this->_checkout->place();
-            $order = $this->_checkout->getOrder();
-            $this->invoiceOrder($order);
+        $this->_checkout->loginUser();
+
+        if ($this->_checkout->checkSignature() && $this->_checkout->checkResult() && $quote->getIsActive()) {
+            $connection = Mage::getSingleton('core/resource')->getConnection('core_write');
+            try {
+                $connection->beginTransaction();
+
+                $this->_checkout->place();
+                $order = $this->_checkout->getOrder();
+
+                if ($order->getIncrementId() == $param) {
+                    $this->invoiceOrder($order);
+                    $connection->commit();
+                }
+                else {
+                    $connection->rollback();
+                }
+            } catch (Exception $e) {
+                $connection->rollback();
+            }
         }
     }
 
@@ -144,7 +157,7 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
     public function completeAction()
     {
         try {
-            if (!$this->_initCheckout()) {
+            if (!$this->_initCheckout(true)) {
                 $this->getResponse()->setRedirect(Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB));
                 return;
             }
@@ -161,7 +174,29 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            $this->placeOrder();
+
+            $this->_initToken();
+
+            // prepare session to success or cancellation page
+            $session = $this->_getCheckoutSession();
+            $session->clearHelperData();
+
+            // store the last successful quote and order so the correct order can be displayed on
+            // on the next screen. Get the Quote and Order from the db using xref, since it's not
+            // in the session once callback completes.
+            $xref = $this->_checkout->getParams('x_reference');
+            $quote = Mage::getModel('sales/quote')->load($xref, 'reserved_order_id');
+            $session->setLastQuoteId($quote->getId())
+                    ->setLastSuccessQuoteId($quote->getId());
+
+            //get the order that was created and store the IDs for use in info pages
+            $order = Mage::getModel('sales/order')->loadByIncrementId($xref);
+            $session->setLastOrderId($order->getId())
+                    ->setLastRealOrderId($order->getIncrementId());
+
+            // no need in token anymore
+            $this->_initToken(false);
+
             if (!$this->_checkout->canSkipOrderReviewStep()) {
                 $this->_redirect('checkout/onepage/success');
             } else {
@@ -186,18 +221,18 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
             $session = $this->_getCheckoutSession();
             // "last successful quote"
             $quoteId = $session->getLastQuoteId();
-            $quota = Mage::getModel('sales/quote')->load($quoteId);
+            $quote = Mage::getModel('sales/quote')->load($quoteId);
 
             $this->loadLayout();
             $this->_initLayoutMessages('kash_gateway/session');
             $reviewBlock = $this->getLayout()->getBlock('gateway.kash.review');
-            $reviewBlock->setQuote($quota);
-            $detailsBlock = $reviewBlock->getChild('details')->setCustomQuote($quota);
+            $reviewBlock->setQuote($quote);
+            $detailsBlock = $reviewBlock->getChild('details')->setCustomQuote($quote);
             if ($reviewBlock->getChild('shipping_method')) {
-                $reviewBlock->getChild('shipping_method')->setCustomQuote($quota);
+                $reviewBlock->getChild('shipping_method')->setCustomQuote($quote);
             }
             if ($detailsBlock->getChild('totals')) {
-                $detailsBlock->getChild('totals')->setCustomQuote($quota);
+                $detailsBlock->getChild('totals')->setCustomQuote($quote);
             }
             $this->renderLayout();
             return;
@@ -210,55 +245,6 @@ class Kash_Gateway_BbController extends Mage_Core_Controller_Front_Action
             Mage::logException($e);
         }
         $this->_redirect('checkout/cart');
-    }
-
-    /**
-     * Submit the order
-     */
-    protected function placeOrder()
-    {
-        try {
-            $this->_initToken();
-            $this->_checkout->place();
-
-            // prepare session to success or cancellation page
-            $session = $this->_getCheckoutSession();
-            $session->clearHelperData();
-
-            // "last successful quote"
-            $quoteId = $this->_getQuote()->getId();
-            $session->setLastQuoteId($quoteId)
-                ->setLastSuccessQuoteId($quoteId);
-
-            // an order may be created
-            $order = $this->_checkout->getOrder();
-            $this->invoiceOrder($order);
-            if ($order) {
-                $session->setLastOrderId($order->getId())
-                    ->setLastRealOrderId($order->getIncrementId());
-            }
-
-            // redirect if Payment specified some URL
-            $url = $this->_checkout->getRedirectUrl();
-            if ($url) {
-                $this->getResponse()->setRedirect($url);
-                return;
-            }
-            $this->_initToken(false); // no need in token anymore
-            return;
-        } catch (Mage_Core_Exception $e) {
-            Mage::helper('checkout')->sendPaymentFailedEmail($this->_getQuote(), $e->getMessage());
-            $this->_getSession()->addError($e->getMessage());
-            $this->_redirect('*/*/review');
-        } catch (Exception $e) {
-            Mage::helper('checkout')->sendPaymentFailedEmail(
-                $this->_getQuote(),
-                $this->__('Unable to place the order.')
-            );
-            $this->_getSession()->addError($this->__('Unable to place the order.'));
-            Mage::logException($e);
-            $this->_redirect('*/*/review');
-        }
     }
 
     /**
