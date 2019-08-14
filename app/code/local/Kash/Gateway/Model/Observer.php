@@ -65,8 +65,9 @@ class Kash_Gateway_Model_Observer extends Varien_Object
 
         $url = $config->post_url.'/reporting';
 
-        $api->log("order ".$order->getIncrementId()." paid with: ".$payment);
-        $log = $api->getLog();
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log("order ".$order->getIncrementId()." paid with: ".$payment);
+        $log = $logger->getLog();
 
         $data = array(
             'x_account_id' => $config->x_account_id,
@@ -91,7 +92,7 @@ class Kash_Gateway_Model_Observer extends Varien_Object
 
         //If the server did not return an error, erase the part of the log we just sent.
         if ($result !== FALSE) {
-            $api->resetLog(strlen($log));
+            $logger->resetLog(strlen($log));
         }
     }
 
@@ -102,13 +103,9 @@ class Kash_Gateway_Model_Observer extends Varien_Object
      */
     public function logOrderSave($observer) {
         $order = $observer->getOrder();
-
-        $config = Mage::getModel('kash_gateway/config', array(Kash_Gateway_Model_Config::METHOD_GATEWAY_KASH));
-        $api = Mage::getModel('kash_gateway/api_bb')->setConfigObject($config);
-
-        $api->log('order '.$order->getIncrementId().': was saved, state is: '.$order->getState());
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('order '.$order->getIncrementId().': was saved, state is: '.$order->getState());
     }
-
 
     /**
      * Listen for when an a quote is converted to an order and log it
@@ -118,12 +115,8 @@ class Kash_Gateway_Model_Observer extends Varien_Object
     public function logQuoteToOrder($observer) {
         $order = $observer->getOrder();
         $quote = $observer->getQuote();
-
-        $config = Mage::getModel('kash_gateway/config', array(Kash_Gateway_Model_Config::METHOD_GATEWAY_KASH));
-        $api = Mage::getModel('kash_gateway/api_bb')->setConfigObject($config);
-
-        $api->log('quote '.$quote->getId().': was converted to order '.$order->getIncrementId());
-
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('quote '.$quote->getId().': was converted to order '.$order->getIncrementId());
     }
 
 }

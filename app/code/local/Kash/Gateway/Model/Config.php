@@ -20,10 +20,10 @@ class Kash_Gateway_Model_Config
     const METHOD_GATEWAY_KASH = 'kash_gateway';
 
     /**
-     * URL for get request - BB Checkout
+     * URL for get request
      * @var string
      */
-    const REQUEST_GATEWAY_KASH = 'gateway/bb/getRequest';
+    const REQUEST_GATEWAY_KASH = 'kash_gateway/offsite/getRequest';
 
     /**
      *  Discount code

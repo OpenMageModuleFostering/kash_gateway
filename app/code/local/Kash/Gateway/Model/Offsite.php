@@ -1,17 +1,16 @@
 <?php
 
-/** *
- * Payment BB Module
- *
- * @author  Blue Badger <jonathan@badger.blue>
- */
-class Kash_Gateway_Model_Method_Bb extends Mage_Payment_Model_Method_Abstract
+require_once(Mage::getModuleDir('kashlib', 'Kash_Gateway').'/kashlib/KashApi.php');
+
+class Kash_Gateway_Model_Offsite extends Mage_Payment_Model_Method_Abstract
 {
     protected $_code  = Kash_Gateway_Model_Config::METHOD_GATEWAY_KASH;
     protected $_formBlockType = 'kash_gateway/form_bb';
     protected $_infoBlockType = 'kash_gateway/adminhtml_info';
 
     protected $_canUseInternal              = false;
+    protected $_canRefund                   = true;
+    protected $_canRefundInvoicePartial     = true;
 
     /**
      * Config instance
@@ -64,7 +63,7 @@ class Kash_Gateway_Model_Method_Bb extends Mage_Payment_Model_Method_Abstract
      * Also updates store ID in config object
      *
      * @param Mage_Core_Model_Store|int $store
-     * @return Kash_Gateway_Model_Method_Bb
+     * @return Kash_Gateway_Model_Offsite
      */
     public function setStore($store)
     {
@@ -97,7 +96,7 @@ class Kash_Gateway_Model_Method_Bb extends Mage_Payment_Model_Method_Abstract
      */
     public function getCheckoutRedirectUrl()
     {
-        return Mage::getUrl('kash_gateway/bb/start', array('_secure'=>true));
+        return Mage::getUrl('kash_gateway/offsite/start', array('_secure'=>true));
     }
 
     /**
@@ -106,6 +105,32 @@ class Kash_Gateway_Model_Method_Bb extends Mage_Payment_Model_Method_Abstract
     public function canGetRecurringProfileDetails()
     {
         return true;
+    }
+
+    /**
+     * Refund specified amount for payment
+     *
+     * @param Varien_Object $payment
+     * @param float $amount
+     *
+     * @return Mage_Payment_Model_Abstract
+     */
+    public function refund(Varien_Object $payment, $amount)
+    {
+        $kashTransactionId = $payment->getCreditmemo()->getInvoice()->getTransactionId();
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('refunding $' . $amount . ' for ' . $kashTransactionId);
+
+        $gatewayUrl = $this->_config->post_url;
+        $serverKey = $this->_config->server_key;
+        $kashApi = new KashApi($gatewayUrl, $serverKey);
+
+        $result = $kashApi->refund($kashTransactionId, $amount);
+        if ($result->statusCode !== 200) {
+            Mage::throwException(Mage::helper('kash_gateway')->__($result->body->message));
+        }
+
+        return $this;
     }
 
 }

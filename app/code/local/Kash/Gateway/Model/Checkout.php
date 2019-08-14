@@ -60,7 +60,7 @@ class Kash_Gateway_Model_Checkout
      *
      * @var array
      */
-    protected $_giropayUrls = array();
+    protected $_callbackUrls = array();
 
     /**
      * Customer ID
@@ -105,9 +105,9 @@ class Kash_Gateway_Model_Checkout
      * @param string $completeUrl - complete payment result
      * @return $this
      */
-    public function prepareGiropayUrls($callbackUrl, $cancelUrl, $completeUrl)
+    public function setCallbackUrls($callbackUrl, $cancelUrl, $completeUrl)
     {
-        $this->_giropayUrls = array($callbackUrl, $cancelUrl, $completeUrl);
+        $this->_callbackUrls = array($callbackUrl, $cancelUrl, $completeUrl);
         return $this;
     }
 
@@ -158,22 +158,23 @@ class Kash_Gateway_Model_Checkout
      */
     public function start()
     {
-        $this->getApi()->log('quote '.$this->_quote->getId().': start()');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('quote '.$this->_quote->getId().': start()');
         $this->_quote->collectTotals();
 
         if (!$this->_quote->getGrandTotal() && !$this->_quote->hasNominalItems()) {
-            $this->getApi()->log('quote '.$this->_quote->getId().': Error, quote has items, but no amount.');
+            $logger->log('quote '.$this->_quote->getId().': Error, quote has items, but no amount.');
             Mage::throwException(Mage::helper('kash_gateway')->__('Payment does not support processing orders with zero amount. To complete your purchase, proceed to the standard checkout process.'));
         }
 
         $this->_quote->reserveOrderId()->save();
-        $this->getApi()->log('quote '.$this->_quote->getId().' reserved orderId/x_reference '.$this->_quote->getReservedOrderId());
+        $logger->log('quote '.$this->_quote->getId().' reserved orderId/x_reference '.$this->_quote->getReservedOrderId());
 
         // prepare API
         $this->getApi()->setAmount($this->_quote->getGrandTotal())
             ->setCurrencyCode($this->_quote->getBaseCurrencyCode())
             ->setXInvoice($this->_quote->getReservedOrderId());
-        list($callbackUrl, $cancelUrl, $completeUrl) = $this->_giropayUrls;
+        list($callbackUrl, $cancelUrl, $completeUrl) = $this->_callbackUrls;
         $this->getApi()->addData(array(
             'x_url_callback' => $callbackUrl,
             'x_url_cancel' => $cancelUrl,
@@ -189,7 +190,7 @@ class Kash_Gateway_Model_Checkout
             $this->getApi()->setBillingAddress($billingAddress);
         }
         else {
-            $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': Could not validate billing address');
+            $logger->log('x_reference '.$this->_quote->getReservedOrderId().': Could not validate billing address');
         }
 
         // Set shipping address unless the product is a virtual product
@@ -372,7 +373,8 @@ class Kash_Gateway_Model_Checkout
      */
     protected function _prepareGuestQuote()
     {
-        $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': Preparing a quote for a GUEST user.');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('x_reference '.$this->_quote->getReservedOrderId().': Preparing a quote for a GUEST user.');
         $quote = $this->_quote;
         $quote->setCustomerId(null)
             ->setCustomerEmail($quote->getBillingAddress()->getEmail())
@@ -410,7 +412,8 @@ class Kash_Gateway_Model_Checkout
      */
     protected function _prepareNewCustomerQuote()
     {
-        $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': preparing a new customer quote');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('x_reference '.$this->_quote->getReservedOrderId().': preparing a new customer quote');
         $quote = $this->_quote;
         $billing = $quote->getBillingAddress();
         $shipping = $quote->isVirtual() ? null : $quote->getShippingAddress();
@@ -470,7 +473,8 @@ class Kash_Gateway_Model_Checkout
      */
     protected function _prepareCustomerQuote()
     {
-        $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': preparing a quote for an existing customer');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('x_reference '.$this->_quote->getReservedOrderId().': preparing a quote for an existing customer');
         $quote = $this->_quote;
         $billing = $quote->getBillingAddress();
         $shipping = $quote->isVirtual() ? null : $quote->getShippingAddress();
@@ -510,7 +514,8 @@ class Kash_Gateway_Model_Checkout
      */
     protected function _involveNewCustomer()
     {
-        $this->getApi()->log('x_reference '.$this->_quote->getReservedOrderId().': involve new customer, send them confirmation email.');
+        $logger = Mage::helper('kash_gateway')->logger();
+        $logger->log('x_reference '.$this->_quote->getReservedOrderId().': involve new customer, send them confirmation email.');
         $customer = $this->_quote->getCustomer();
         if ($customer->isConfirmationRequired()) {
             $customer->sendNewAccountEmail('confirmation');
@@ -655,8 +660,9 @@ class Kash_Gateway_Model_Checkout
             $ruleCoupon->save();
             return $ruleCoupon->getCouponCode();
         } catch (Exception $ex) {
-            $this->getApi()->log('Error: coupon exception');
-            $this->getApi()->log($ex);
+            $logger = Mage::helper('kash_gateway')->logger();
+            $logger->log('Error: coupon exception');
+            $logger->log($ex);
             Mage::logException($ex);
         }
     }
