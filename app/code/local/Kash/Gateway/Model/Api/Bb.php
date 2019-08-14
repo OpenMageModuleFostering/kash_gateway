@@ -135,6 +135,16 @@ class Kash_Gateway_Model_Api_Bb extends Kash_Gateway_Model_Api_Abstract
             $request = $this->_importAddresses($request);
         }
 
+        //make sure we have the email
+        if (empty($request['x_customer_email'])) {
+            try {
+                $customer = Mage::getSingleton('customer/session')->getCustomer();
+                $request['x_customer_email'] = $customer->getEmail();
+            } catch (Exception $e) {
+                Mage::log($e->getMessage());
+            }
+        }
+
         $date = Zend_Date::now();
         $request['x_timestamp'] = $date->getIso();
         $request['x_signature'] = $this->getSignature($request, $this->getHmacKey());

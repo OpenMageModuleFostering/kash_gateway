@@ -58,6 +58,9 @@
 		-webkit-box-sizing: content-box;
 		-moz-box-sizing: content-box;
 		box-sizing: content-box;
+		/* needed for iOS scroller */
+		-webkit-overflow-scrolling: touch;
+        overflow-y: scroll;
 	}		
 
 #lightwindow_loading {

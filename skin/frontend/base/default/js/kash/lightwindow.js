@@ -585,10 +585,14 @@ lightwindow.prototype = {
 			// Empty the contents
 			$('lightwindow_contents').innerHTML = '';
 			
-			// Reset the scroll bars
-			$('lightwindow_contents').setStyle({
-				overflow: 'hidden'
-			});		
+			var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+			if (!userAgent.match(/iPad|iPhone|iPod/i)) {
+		  		// Reset the scroll bars, except on iOS
+				$('lightwindow_contents').setStyle({
+					overflow: 'hidden'
+				});		
+		  	}
+
 			
 			if (!this.windowActive) {
 				$('lightwindow_data_slide_inner').setStyle({
