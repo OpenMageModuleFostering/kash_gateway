@@ -159,18 +159,5 @@ class Kash_Gateway_Model_Config
     {
         return Mage::getStoreConfigFlag(self::XML_PATH_GATEWAY_KASH_SKIP_ORDER_REVIEW_STEP_FLAG);
     }
-
-    /**
-     * Get Payment image URL
-     * Supposed to be used on payment methods selection
-     * $staticSize is applicable for static images only
-     *
-     * @param string $localeCode
-     * @return String
-     */
-    public function getPaymentImageUrl($localeCode)
-    {
-        return 'https://offsite-gateway-sim.herokuapp.com/shopify.png';
-    }
 }
 
