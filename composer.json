@@ -1,5 +1,5 @@
 {
-    "name": "OpenMageModuleFostering\/kash_gateway",
+    "name": "openmage-module-fostering\/kash_gateway",
     "type": "magento-module",
     "license": "MITL",
     "homepage": "",
